@@ -19,6 +19,11 @@ public class PlayerControls : MonoBehaviour
     
     [Header("---Walk---")]
     public float walkSpeed = 7f;
+    public PlayerLook playerLookScript;
+    
+    [Header("---Crouch---")]
+    public Transform ceilingCheck;
+    public float crouchSpeed = 3f;
 
     [Header("---Control Drag---")]
     public float groundDrag = 6f;
@@ -31,6 +36,10 @@ public class PlayerControls : MonoBehaviour
     [Header("---Keybinds---")]
     [SerializeField]
     private KeyCode jumpKey = KeyCode.Space;
+    [SerializeField]
+    private KeyCode crouchKey = KeyCode.C; 
+    [SerializeField]
+    private KeyCode interactKey = KeyCode.E;
 
     private float _playerHeight = 1f;
     private float _playerCrouchHeight = 0.5f;
@@ -43,6 +52,7 @@ public class PlayerControls : MonoBehaviour
     private Vector3 _slopeMoveDirection;
     private Rigidbody _rb;
     
+    private bool _ceiling = false;
     private bool _grounded;
     
     private float _groundDist = 0.4f;
@@ -91,7 +101,14 @@ private void FixedUpdate()
 
     private void ControlSpeed()
     {
-        moveSpeed = Mathf.Lerp(moveSpeed, walkSpeed, acceleration * Time.deltaTime);
+        if (Input.GetKey(crouchKey) && _grounded)
+        {
+            moveSpeed = Mathf.Lerp(moveSpeed, crouchSpeed, acceleration * Time.deltaTime);
+        }
+        else
+        {
+            moveSpeed = Mathf.Lerp(moveSpeed, walkSpeed, acceleration * Time.deltaTime);
+        }
     }
 
     private void MyInput()
@@ -131,6 +148,8 @@ private void FixedUpdate()
 
         _slopeMoveDirection =
             Vector3.ProjectOnPlane(_moveDirection, _slopeHit.normal);
+        Crouching();
+        Interact();
         
         if (Input.GetKeyDown(jumpKey) && _grounded)
         {
@@ -165,6 +184,31 @@ private void FixedUpdate()
                 moveMultiplier *
                 airMultiplier,
                 ForceMode.Acceleration);
+        }
+    }
+    
+    private void Crouching()
+    {
+        RaycastHit hit;
+        Ray ray = new Ray(ceilingCheck.position, Vector3.up);
+        Debug.DrawRay(ceilingCheck.position, Vector3.up * 2, Color.green);
+        _ceiling = Physics.Raycast(ray, out hit, 2f, groundedMask);
+        if (Input.GetKey(crouchKey))
+        {
+            transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(1.3f, _playerCrouchHeight, 1.3f), Time.deltaTime  * acceleration);
+            
+        }
+        else if(!_ceiling && !Input.GetKey(crouchKey))
+        {
+            transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(1.3f, _playerHeight, 1.3f),Time.deltaTime  * acceleration);
+        }
+    }
+
+    private void Interact()
+    {
+        if (Input.GetKeyDown(interactKey))
+        {
+            playerLookScript.CanInteract(true);
         }
     }
 
