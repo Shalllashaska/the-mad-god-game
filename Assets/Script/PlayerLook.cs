@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,6 +14,11 @@ public class PlayerLook : MonoBehaviour
     [Header("---Mouse Settings---")]
     public float sensX = 100f;
     public float sensY = 100f;
+    
+    [Header("--Interact--")]
+    public LayerMask canTakeLayers;
+    public float distanceToInteract = 1.5f;
+    public GameObject interactIcon;
 
     public bool pause = false;
     
@@ -32,6 +38,7 @@ public class PlayerLook : MonoBehaviour
 
     private void Start()
     {
+        interactIcon.SetActive(false);
         yRotation = transform.rotation.y;
         if (playerCamera == null)
         {
@@ -50,6 +57,11 @@ public class PlayerLook : MonoBehaviour
         
         playerCamera.transform.localRotation = Quaternion.Euler(xRotation,  yRotation, 0);
         orientation.transform.rotation = Quaternion.Euler(0, yRotation,0);
+    }
+
+    private void FixedUpdate()
+    {
+        CanInteract();
     }
 
     #endregion
@@ -103,6 +115,25 @@ public class PlayerLook : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    public bool CanInteract(bool interactWithObject = false)
+    {
+        Ray ray = new Ray(playerCamera.position, playerCamera.forward);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, distanceToInteract, canTakeLayers))
+        {
+            interactIcon.SetActive(true);
+            if (interactWithObject)
+            {
+                // Interact with object
+                Destroy(hit.collider.gameObject);    
+            }
+
+            return true;
+        }
+        interactIcon.SetActive(false);
+        return false;
     }
     #endregion
     
