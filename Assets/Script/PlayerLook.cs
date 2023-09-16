@@ -20,6 +20,12 @@ public class PlayerLook : MonoBehaviour
     public float distanceToInteract = 1.5f;
     public GameObject interactIcon;
 
+    [Header("--Rifle--")] 
+    public Transform rifleTransform;
+    public Transform hipPositionTransform;
+    public Transform aimingPositionTransform;
+    public float speedOfAiming = 0.5f;
+    
     public bool pause = false;
     
     private float mouseY;
@@ -29,8 +35,9 @@ public class PlayerLook : MonoBehaviour
     
     private float xRotation;
     private float yRotation;
-    private Camera _camera;
-    private float _startFov;
+    //private Transform _currentRifleTransform;
+    //private Camera _camera;
+    //private float _startFov;
 
     #endregion
 
@@ -44,8 +51,10 @@ public class PlayerLook : MonoBehaviour
         {
             playerCamera = GameObject.Find("Camera").transform;
         }
-        _camera = GameObject.Find("Camera/MainCamera").GetComponent<Camera>();
-        _startFov = _camera.fieldOfView;
+        rifleTransform.position = hipPositionTransform.position;
+        rifleTransform.rotation = hipPositionTransform.rotation;
+        //_camera = GameObject.Find("Camera/MainCamera").GetComponent<Camera>();
+        //_startFov = _camera.fieldOfView;
         ToggleCursorMode();
     }
 
@@ -57,6 +66,7 @@ public class PlayerLook : MonoBehaviour
         
         playerCamera.transform.localRotation = Quaternion.Euler(xRotation,  yRotation, 0);
         orientation.transform.rotation = Quaternion.Euler(0, yRotation,0);
+        
     }
 
     private void FixedUpdate()
@@ -90,12 +100,32 @@ public class PlayerLook : MonoBehaviour
 
     private void Aiming()
     {
-        _camera.fieldOfView = _startFov * aimingMult;
+        rifleTransform.position = Vector3.Lerp(
+            rifleTransform.position, 
+            aimingPositionTransform.position,
+            speedOfAiming * Time.deltaTime
+            );
+        rifleTransform.rotation = Quaternion.Lerp(
+            rifleTransform.rotation,
+            aimingPositionTransform.rotation,
+            speedOfAiming * Time.deltaTime
+        );
+        //_camera.fieldOfView = _startFov * aimingMult;
     }
 
     private void DisAiming()
     {
-        _camera.fieldOfView = _startFov;
+        rifleTransform.position = Vector3.Lerp(
+            rifleTransform.position,
+            hipPositionTransform.position, 
+            speedOfAiming * Time.deltaTime
+        );
+        rifleTransform.rotation = Quaternion.Lerp(
+            rifleTransform.rotation,
+            hipPositionTransform.rotation,
+            speedOfAiming * Time.deltaTime
+        );
+       // _camera.fieldOfView = _startFov;
     }
 
     private void ToggleCursorMode()
