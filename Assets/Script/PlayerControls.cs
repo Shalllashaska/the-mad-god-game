@@ -41,6 +41,9 @@ public class PlayerControls : MonoBehaviour
     [SerializeField]
     private KeyCode interactKey = KeyCode.E;
 
+    [Header("--Weapon--")] 
+    public Transform weaponTransform;
+
     private float _playerHeight = 1f;
     private float _playerCrouchHeight = 0.5f;
     private float _G = 9.8f;
@@ -60,6 +63,11 @@ public class PlayerControls : MonoBehaviour
     private float _currentTimeFootsteps;
     private Camera _camera;
     
+    private Vector3 _targetWeaponBobPosition;
+    private Vector3 _weaponOrigin;
+    private float _movementCounter;
+    private float _idleCounter;
+    
     
 #endregion
 
@@ -69,12 +77,14 @@ private void Start()
 {
     _rb = GetComponent<Rigidbody>();
     _rb.freezeRotation = true;
+    _weaponOrigin = weaponTransform.localPosition;
 }
 
 private void Update()
 {
     MyInput();
     ControlSpeed();
+    WeaponBobing();
 }
 
 private void FixedUpdate()
@@ -86,6 +96,29 @@ private void FixedUpdate()
 #endregion
 
 #region MyPrivateMethods
+
+
+    private void WeaponBobing()
+    {
+        if (_horizontalMovement == 0 && _verticalMovement == 0)
+        {
+            HeadBob(_idleCounter, 0.005f, 0.015f);
+            _idleCounter += Time.deltaTime;
+            weaponTransform.localPosition = Vector3.Lerp(weaponTransform.localPosition, _targetWeaponBobPosition, Time.deltaTime * 2f);
+        }
+        else
+        {
+            HeadBob(_movementCounter, 0.045f, 0.045f);
+            _movementCounter += Time.deltaTime * walkSpeed;
+            weaponTransform.localPosition =
+                Vector3.Lerp(weaponTransform.localPosition, _targetWeaponBobPosition, Time.deltaTime * 10f);
+        }
+    }
+        
+    private void HeadBob(float parZ, float parX_intens, float parY_intens)
+    {
+        _targetWeaponBobPosition = _weaponOrigin + new Vector3(Mathf.Cos(parZ)*parX_intens, Mathf.Sin(parZ * 2) * parY_intens, 0);
+    }
 
     private void ControlDrag()
     {
