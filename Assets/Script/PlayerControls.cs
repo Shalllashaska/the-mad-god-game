@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -9,6 +10,7 @@ public class PlayerControls : MonoBehaviour
     [Header("---Movement---")] 
     public bool lockMovement = false;
     public float moveSpeed = 10f;
+    public float climbingSpeed = 10f;
     public float acceleration = 15f;
     public float moveMultiplier = 10f;
     public float airMultiplier = 0.1f;
@@ -47,10 +49,8 @@ public class PlayerControls : MonoBehaviour
     private float _playerHeight = 1f;
     private float _playerCrouchHeight = 0.5f;
     private float _G = 9.8f;
-    [HideInInspector]
-    public float _horizontalMovement;
-    [HideInInspector]
-    public float _verticalMovement;
+    private float _horizontalMovement;
+    private float _verticalMovement;
     private Vector3 _moveDirection;
     private Vector3 _slopeMoveDirection;
     private Rigidbody _rb;
@@ -65,8 +65,11 @@ public class PlayerControls : MonoBehaviour
     
     private Vector3 _targetWeaponBobPosition;
     private Vector3 _weaponOrigin;
+    private Vector3 _lastClimbingDirection;
     private float _movementCounter;
     private float _idleCounter;
+
+    private bool _isClimbingLadder;
     
     
 #endregion
@@ -97,6 +100,18 @@ private void FixedUpdate()
 
 #region MyPrivateMethods
 
+    private void GrabLadder(Vector3 direction)
+    {
+        _isClimbingLadder = true;
+        _lastClimbingDirection = direction;
+        weaponTransform.gameObject.SetActive(false);
+    }
+
+    private void DropLadder()
+    {
+        _isClimbingLadder = false; 
+        weaponTransform.gameObject.SetActive(true);
+    }
 
     private void WeaponBobing()
     {
@@ -175,7 +190,65 @@ private void FixedUpdate()
             _moveDirection = transform.right * _horizontalMovement;
             _verticalMovement = 0;
         }
+        float avoidFloorDistance = 0.1f;
+        float ladderGrabDistance = 0.9f;
+        if (!_isClimbingLadder)
+        {
+            if (Physics.Raycast(
+                    groundCheck.transform.position + Vector3.up * avoidFloorDistance, 
+                    _moveDirection,
+                    out RaycastHit ladderRaycastHit, 
+                    ladderGrabDistance
+                ))
+            {
+                if (ladderRaycastHit.transform.TryGetComponent(out Ladder ladder))
+                {
+                    GrabLadder(_moveDirection);
+                }
+            }
+        }
+        else
+        {
+            if (Physics.Raycast(
+                    groundCheck.transform.position + Vector3.up * avoidFloorDistance, 
+                    _lastClimbingDirection,
+                    out RaycastHit ladderRaycastHit, 
+                    ladderGrabDistance
+                ))
+            {
+                if (!ladderRaycastHit.transform.TryGetComponent(out Ladder ladder))
+                {
+                    DropLadder();
+                    Jump(jumpForce * 1.02f);
+                }
+            }
+            else
+            {
+                DropLadder();
+                Jump(jumpForce * 1.02f);
+            }
 
+            if (_verticalMovement < 0 && Physics.CheckSphere(groundCheck.position, _groundDist, groundedMask))
+            {
+                DropLadder();
+            }
+        }
+
+        if (_isClimbingLadder)
+        {
+            _moveDirection.y = _verticalMovement;
+            _moveDirection.x = 0;
+            _moveDirection.z = 0;
+            _G = 0;
+            _grounded = true;
+            _rb.useGravity = false;
+        }
+        else
+        {
+            _rb.useGravity = true;
+            _G = 9.8f;
+        }
+        
         _currentTimeFootsteps -= Time.deltaTime;
 
 
@@ -186,14 +259,22 @@ private void FixedUpdate()
         
         if (Input.GetKeyDown(jumpKey) && _grounded)
         {
-            Jump();
+            Jump(jumpForce);
         }
     }
 
     private void Movement()
     {
         _rb.AddForce(-transform.up.normalized * _G, ForceMode.Acceleration);
-        if (_grounded && !OnSlope())
+        if (_isClimbingLadder)
+        {
+            _rb
+                .AddForce(_moveDirection.normalized *
+                          climbingSpeed *
+                          moveMultiplier,
+                    ForceMode.Acceleration);
+        }
+        else if (_grounded && !OnSlope())
         {
             _rb
                 .AddForce(_moveDirection.normalized *
@@ -245,10 +326,10 @@ private void FixedUpdate()
         }
     }
 
-    private void Jump()
+    private void Jump(float force)
     {
         _rb.velocity = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
-        _rb.AddForce(transform.up.normalized * jumpForce, ForceMode.Impulse);
+        _rb.AddForce(transform.up.normalized * force, ForceMode.Impulse);
     }
 
     private bool OnSlope()
@@ -271,6 +352,13 @@ private void FixedUpdate()
             }
         }
         return false;
+    }
+
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(transform.position, _moveDirection);
     }
 
     #endregion
