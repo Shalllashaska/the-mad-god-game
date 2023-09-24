@@ -10,6 +10,7 @@ public class PlayerLook : MonoBehaviour
     [Header("---Camera Settings---")]
     [SerializeField] private Transform playerCamera;
     [SerializeField] private Transform orientation;
+    [SerializeField] private float aimFov = 45;
     
     [Header("---Mouse Settings---")]
     public float sensX = 100f;
@@ -28,16 +29,15 @@ public class PlayerLook : MonoBehaviour
     
     public bool pause = false;
     
-    private float mouseY;
-    private float mouseX;
+    private float _mouseY;
+    private float _mouseX;
     
-    private float mult = 0.01f;
+    private float _mult = 0.01f;
+    private float _startFov;
     
-    private float xRotation;
-    private float yRotation;
-    //private Transform _currentRifleTransform;
-    //private Camera _camera;
-    //private float _startFov;
+    private float _xRotation;
+    private float _yRotation;
+    private Camera _camera;
 
     #endregion
 
@@ -46,15 +46,15 @@ public class PlayerLook : MonoBehaviour
     private void Start()
     {
         interactIcon.SetActive(false);
-        yRotation = transform.rotation.y;
+        _yRotation = transform.rotation.y;
         if (playerCamera == null)
         {
             playerCamera = GameObject.Find("Camera").transform;
         }
         rifleTransform.position = hipPositionTransform.position;
         rifleTransform.rotation = hipPositionTransform.rotation;
-        //_camera = GameObject.Find("Camera/MainCamera").GetComponent<Camera>();
-        //_startFov = _camera.fieldOfView;
+        _camera = GameObject.Find("Camera/MainCamera").GetComponent<Camera>();
+        _startFov = _camera.fieldOfView;
         ToggleCursorMode();
     }
 
@@ -64,8 +64,8 @@ public class PlayerLook : MonoBehaviour
         
         MyInput();
         
-        playerCamera.transform.localRotation = Quaternion.Euler(xRotation,  yRotation, 0);
-        orientation.transform.rotation = Quaternion.Euler(0, yRotation,0);
+        playerCamera.transform.localRotation = Quaternion.Euler(_xRotation,  _yRotation, 0);
+        orientation.transform.rotation = Quaternion.Euler(0, _yRotation,0);
         
     }
 
@@ -80,13 +80,13 @@ public class PlayerLook : MonoBehaviour
 
     private void MyInput()
     {
-        mouseX = Input.GetAxisRaw("Mouse X");
-        mouseY = Input.GetAxisRaw("Mouse Y");
+        _mouseX = Input.GetAxisRaw("Mouse X");
+        _mouseY = Input.GetAxisRaw("Mouse Y");
        
-        yRotation += mouseX * sensX * mult;
-        xRotation -= mouseY * sensY * mult;
+        _yRotation += _mouseX * sensX * _mult;
+        _xRotation -= _mouseY * sensY * _mult;
 
-        xRotation = Mathf.Clamp(xRotation, -80, 85);
+        _xRotation = Mathf.Clamp(_xRotation, -80, 85);
 
         if (Input.GetMouseButton(1))
         {
@@ -110,7 +110,7 @@ public class PlayerLook : MonoBehaviour
             aimingPositionTransform.rotation,
             speedOfAiming * Time.deltaTime
         );
-        //_camera.fieldOfView = _startFov * aimingMult;
+        _camera.fieldOfView = Mathf.Lerp(_camera.fieldOfView, aimFov, speedOfAiming * Time.deltaTime);
     }
 
     private void DisAiming()
@@ -125,7 +125,7 @@ public class PlayerLook : MonoBehaviour
             hipPositionTransform.rotation,
             speedOfAiming * Time.deltaTime
         );
-       // _camera.fieldOfView = _startFov;
+        _camera.fieldOfView = Mathf.Lerp(_camera.fieldOfView, _startFov, speedOfAiming * Time.deltaTime);
     }
 
     private void ToggleCursorMode()
