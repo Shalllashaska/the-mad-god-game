@@ -27,6 +27,9 @@ public class PlayerLook : MonoBehaviour
     public Transform aimingPositionTransform;
     public float speedOfAiming = 0.5f;
     
+    public GameObject bullet;
+    public Transform attackPoint;
+
     public bool pause = false;
     
     private float _mouseY;
@@ -88,8 +91,12 @@ public class PlayerLook : MonoBehaviour
 
         _xRotation = Mathf.Clamp(_xRotation, -80, 85);
 
-        if (Input.GetMouseButton(1))
+        if (Input.GetKey(KeyCode.Mouse1))
         {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                Instantiate(bullet, attackPoint.position, attackPoint.rotation);
+            }
             Aiming();
         }
         else
