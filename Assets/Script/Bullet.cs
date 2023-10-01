@@ -7,18 +7,14 @@ public class Bullet : MonoBehaviour
 {
     public float timeDestroy = 3f;
     public float speed = 3f;
-    public Rigidbody rb;
+    private Rigidbody _rigidbody;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        _rigidbody = gameObject.GetComponent<Rigidbody>();
         Destroy(gameObject, timeDestroy);
-        //Invoke("DestroyBullet", timeDestroy);
-        rb.velocity = transform.forward * speed;
+        
+        _rigidbody.velocity = transform.forward * speed;
     }
 
-    void DestroyBullet()
-    {
-        Destroy(this.gameObject);
-    }
 }
